@@ -9,13 +9,12 @@ Feel free to drop me a note if you have any questions.
 
 ### files
 
-01_server.md - basic server setup
-02_user.md - create and configure first user
-03_dev_group.md - create a working directory for development
-04_harden.md - controversial security steps
-05_dev.md - add a few packages, libraries, proxy, etc.
-06_misc.md - various additions
-
+- 01_server.md - basic server setup
+- 02_user.md - create and configure first user
+- 03_dev_group.md - create a working directory for development
+- 04_harden.md - controversial security steps
+- 05_dev.md - add a few packages, libraries, proxy, etc.
+- 06_misc.md - various additions
 
 ### conf files
 
