@@ -1,0 +1,12 @@
+{
+	email username@example.com
+	admin off
+}
+example.com {
+	root * /var/dev/example
+	file_server
+	log {
+		output file /var/log/caddy/example.log
+		format console
+	}
+}

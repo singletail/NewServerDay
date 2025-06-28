@@ -1,0 +1,184 @@
+# mv to ~/.zshrc or merge with /etc/zsh/zshrc
+
+export LANG=en_US.UTF-8
+export LC_CTYPE=en_US.UTF-8
+export TERM=xterm-256color
+
+# plugins
+
+function load_plugins() {
+    # Fast Syntax Highlighting
+    if [[ -f /usr/local/share/zsh-plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]]; then
+        source /usr/local/share/zsh-plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+    fi
+
+    # Zsh Autosuggestions
+    if [[ -f /usr/local/share/zsh-plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+        source /usr/local/share/zsh-plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+    fi
+}
+
+load_plugins
+
+# profiling (optional)
+
+function enable_prompt_profiling() {
+    zmodload zsh/zprof
+    zprof
+}
+
+# enable_prompt_profiling
+
+# pyenv
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH" # overwritten below
+eval "$(pyenv init - zsh)"
+eval "$(pyenv virtualenv-init -)"
+
+# for building python
+
+export PYTHON_CONFIGURE_OPTS="--enable-optimizations --with-lto --enable-shared"
+
+# rebuild path
+
+rebuild_path() {
+  local new_path=()
+  if [[ -n "$PYENV_ROOT" ]]; then
+    new_path+=("$PYENV_ROOT/plugins/pyenv-virtualenv/bin")
+    new_path+=("$PYENV_ROOT/shims")
+    new_path+=("$PYENV_ROOT/bin")
+  fi
+  new_path+=("$HOME/go/bin")
+  new_path+=("/usr/local/go/bin")
+  new_path+=("/usr/local/bin")
+  new_path+=("/usr/bin")
+  new_path+=("/bin")
+  new_path+=("/usr/sbin")
+  new_path+=("/sbin")
+
+  PATH=$(printf "%s:" "${new_path[@]}" | sed 's/:$//')
+  export PATH
+}
+
+rebuild_path
+
+envgreet() {
+  local COLOR_KEY="\e[38;5;51m"
+  local COLOR_VAL="\e[38;5;201m"
+  local COLOR_PATH="\e[38;5;21m"
+  local COLOR_RESET="\e[0m"
+
+  local EXCLUDE_PATTERN
+  EXCLUDE_PATTERN=$(cat <<'EOF'
+^SSH_
+^PWD=
+^OLDPWD=
+^TERM=
+^LS_COLORS=
+^_=
+^LOGNAME=
+^MAIL=
+^PYENV_SHELL=
+^PYENV_VIRTUALENV_INIT=
+^SHLVL=
+^USER=
+EOF
+)
+
+  local key val
+  local -a lines other_vars
+
+  while IFS='=' read -r key val; do
+    if [[ "$key" == "PATH" ]]; then
+      PATH_VAL="$val"
+    else
+      other_vars+=("$key=$val")
+    fi
+  done < <(printenv | grep -Ev "$EXCLUDE_PATTERN" | sort)
+
+  for line in "${other_vars[@]}"; do
+    IFS='=' read -r key val <<< "$line"
+    printf "${COLOR_KEY}%-20s${COLOR_RESET} = ${COLOR_VAL}%s${COLOR_RESET}\n" "$key" "$val"
+  done
+
+  printf "${COLOR_KEY}%-20s${COLOR_RESET} =\n" "PATH"
+  local path_entry
+  local -a path_entries
+  IFS=':' path_entries=(${(s/:/)PATH_VAL})
+  for path_entry in "${path_entries[@]}"; do
+    printf "  ${COLOR_PATH}%s${COLOR_RESET}\n" "$path_entry"
+  done
+}
+
+[[ -o login ]] && envgreet
+
+# vcs
+
+autoload -Uz vcs_info
+precmd() { vcs_info }
+
+# prompt
+
+## notes
+
+# https://zsh.sourceforge.io/Doc/Release/Prompt-Expansion.html
+# colors: curl -s https://gist.githubusercontent.com/HaleTom/89ffe32783f89f403bba96bd7bcd1263/raw/ | bash
+
+# %T (time)
+# %m (short host - %M is full host)
+# %n (username)
+# %~ (abbreviated directory)
+
+# Conditional:
+# %(x.true-text.false-text)
+# %(!.#.%%)  means # if root, % if not.
+# black=0, white=255
+# Colors - Bright - R=196 O=208 Y=226 G=46 B=21 V=93 C=51 P=201
+# Colors - Medium - R=124 O=136 Y=184 G=40 B=19 V=55 C=39
+# Reds - bright to dark - 196 160 124 88 52
+
+# time/host/dir/vcs
+# nonroot= blue-violet-pink-cyan
+
+# Start
+# foreground red-196 or blue-19
+# %(!.%F{196}.%F{19})%f
+
+# Time
+# background red-196 or blue-19, foreground white
+# %(!.%K{196}.%K{19})%F{255}%T%f
+
+# Username
+# change background to red-160/violet-55, foreground is prev bk 
+# %(!.%F{196}%K{160}.%F{19}%K{55})%f
+# %F{255}%n%k%f
+
+# Host %m
+# change background to red-124/pink-126, foreground is prev bk 
+# %(!.%F{160}%K{124}.%F{55}%K{126})%f
+# %F{255}%m%k%f
+
+# Directory
+# change background to red-88/cyan-32, foreground is prev bk 
+# %(!.%F{124}%K{88}.%F{126}%K{32})%f
+# %F{255}%~%k%f
+
+# foreground to previous background, background to null
+# %(!.%F{88}.%F{32})%f
+
+# VCS info maybe
+# background null, foreground red 124
+# %F{124}%f
+# %K{124}%F{255}${vcs_info_msg_0_}%k%f
+# %F{124}%f
+
+# %F{190}$B${vcs_info_msg_0_}%f
+
+setopt PROMPT_SUBST
+PROMPT='%(!.%F{196}.%F{19})%f%(!.%K{196}.%K{57})%F{255}㈇%(!.%F{160}%K{124}.%F{57}%K{21})%(!.%F{255}%K{160}.%F{255}%K{21})%T%f%(!.%F{160}%K{124}.%F{21}%K{22})%f%F{255}%n%k%f%(!.%F{160}%K{124}.%F{22}%K{214})%f%(!.%F{214}.%F{0})%m%k%f%(!.%F{124}%K{88}.%F{214}%K{202})%f%F{255}%~%k%f%(!.%F{124}%K{52}.%F{202}%K{160})%k%f%(!.%F{52}.%F{88})%f%F{190}$B${vcs_info_msg_0_}%f '
+
+# right prompt (to fix)
+
+# RPROMPT='%{$fg[green]%}%(?::✔)%{$fg[red]%}%(?✘)%{$reset%}'

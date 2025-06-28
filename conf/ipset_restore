@@ -1,0 +1,20 @@
+#!/bin/sh
+LOGFILE="/var/log/ipset-restore.log"
+{
+    echo "$(date '+%F %T') Starting ipset restore"
+
+    if ipset restore < /etc/ipsets/blacklist.save 2>&1; then
+        echo "$(date '+%F %T') ipset restore succeeded"
+    else
+        echo "$(date '+%F %T') ipset restore failed — destroying and retrying"
+        ipset destroy blacklist 2>/dev/null
+        if ipset restore < /etc/ipsets/blacklist.save 2>&1; then
+            echo "$(date '+%F %T') retry succeeded"
+        else
+            echo "$(date '+%F %T') retry failed — continuing anyway"
+        fi
+    fi
+} >> "$LOGFILE" 2>&1
+
+exit 0
+
