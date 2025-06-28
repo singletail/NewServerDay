@@ -22,18 +22,30 @@ Destinations for the files in /conf are explained in the various notes files, bu
 
 #### .zshrc
 
+```zsh
 mv zshrc ~/.zshrc
+```
 
 #### sshd_config (note the port change)
 
+```zsh
 sudo mv sshd_config /etc/ssh
+```
 
 #### iptables
 
+```zsh
 sudo mv rules.v4 /etc/iptables/rules.v4
 sudo iptables-restore < /etc/iptables/rules.v4
+```
 
 #### geofencing scripts - chmod +x
 
+```zsh
 sudo mv update_ipset_blacklist.sh /usr/local/sbin/update_ipset_blacklist.sh
 sudo mv ipset_restore /etc/network/if-pre-up.d
+```
+
+## License
+
+BSD-4-Clause. Deal with it. 🕶️
